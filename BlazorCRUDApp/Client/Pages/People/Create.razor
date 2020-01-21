@@ -1,11 +1,12 @@
 ﻿@page "/people/create"
 @inject HttpClient http
 @inject NavigationManager navigationManager
+@attribute [Authorize]
 
 
 <h3>Create</h3>
 
-<PersonForm ButtonText="Create Person" Person ="@person" OnValidSubmit="@CreatePerson" />
+<PersonForm ButtonText="Create Person" Person="@person" OnValidSubmit="@CreatePerson" />
 
 @code {
     Person person = new Person();
