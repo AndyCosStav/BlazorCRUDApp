@@ -7,6 +7,7 @@ namespace BlazorCRUDApp.Client
     {
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAuthorizationCore();
         }
 
         public void Configure(IComponentsApplicationBuilder app)
