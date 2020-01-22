@@ -1,6 +1,6 @@
 ﻿@page "/people"
-@using System.Security.Cryptography
 @using System.IO
+@using System.Text.Json
 @inject HttpClient http
 @inject IJSRuntime js
 
@@ -14,58 +14,84 @@
     </Authorized>
 </AuthorizeView>
 
-
-@if(people == null)
-{
-    <text>Loading...</text>
-}
-else if (people.Length == 0)
-{
-    <text> There are no records in the database</text>
-}
-else
-{
-    <table class ="table">
-        <thead>
+<Pagination TotalPagesQuantity="totalPageQuantity" CurrentPage="currentPage" Radius="2" SelectedPage="SelectedPage" ></Pagination>
+<GenericList Elements="people">
+    <NullTemplate>
+        <img src="https://media.giphy.com/media/LjbuvHXvzorjG/giphy.gif"/>
+    </NullTemplate>
+    @*<WithIndividualElementsTemplate Context="person">
+        <div class="card">
+            <div class="card-body">
+                @person.Name
+            </div>
+        </div>
+    </WithIndividualElementsTemplate>*@
+    <WithElementsTemplate>
+        <table class="table">
+            <thead>
             <tr>
                 <th></th>
                 <th>Id</th>
                 <th>Name</th>
             </tr>
-        </thead>
-        <tbody>
+            </thead>
+            <tbody>
             @foreach (var person in people)
             {
-               <tr>
-                   <td>
-                       <AuthorizeView>
-                           <Authorized>
-                               <a class="btn btn-success" href="people/edit/@person.Id">Edit</a>
-                               <button class="btn btn-danger" @onclick="@(() => DeletePerson(person.Id))">Delete</button>
-                           </Authorized>
-                       </AuthorizeView>
-                   </td>
-                   <td>@person.Id</td>
-                   <td>@person.Name</td>
-               </tr> 
-            }
-        </tbody>
-    </table>
+                <tr>
+                    <td>
+                        <AuthorizeView>
+                            <Authorized>
+                                <a class="btn btn-success" href="people/edit/@person.Id">Edit</a>
+                                <button class="btn btn-danger" @onclick="@(() => DeletePerson(person.Id))">Delete</button>
+                            </Authorized>
+                        </AuthorizeView>
+                    </td>
+                    <td>@person.Id</td>
+                    <td>@person.Name</td>
+                </tr>
 
-    <button @onclick="ExportAsCSV">Export as CSV</button>
-}
+            }
+            </tbody>
+        </table>
+    </WithElementsTemplate>
+</GenericList>
+
 
 @code {
-    Person[] people { get; set;  }
+    List<Person> people { get; set;  }
+    private int totalPageQuantity;
+    private int currentPage = 1 ;
+
+
 
     protected override async Task OnInitializedAsync()
     {
         await LoadPeople();
     }
 
-    async Task LoadPeople()
+    private async Task SelectedPage(int page)
     {
-        people = await http.GetJsonAsync<Person[]>("api/people");
+        currentPage = page;
+        await LoadPeople(page);
+    }
+
+
+    async Task LoadPeople(int page = 1, int quantityPerPage = 10 )
+    {
+        //await Task.Delay(4000);
+        var httpResponse = await http.GetAsync($"api/people?page={page}&quantityPerPage={quantityPerPage}");
+        if (httpResponse.IsSuccessStatusCode)
+        {
+            totalPageQuantity = int.Parse(httpResponse.Headers.GetValues("pagesQuantity").FirstOrDefault());
+            var responseString = await httpResponse.Content.ReadAsStringAsync();
+
+            people = JsonSerializer.Deserialize<List<Person>>(responseString, new JsonSerializerOptions() {PropertyNameCaseInsensitive = true});
+        }
+        else
+        {
+            //handle Error
+        }
     }
 
     async Task DeletePerson(int personId)
