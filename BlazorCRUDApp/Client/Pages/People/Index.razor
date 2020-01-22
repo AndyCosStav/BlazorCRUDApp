@@ -14,18 +14,18 @@
     </Authorized>
 </AuthorizeView>
 
+<div class="form-inline">
+    <label class="sr-only" for="filter-name">Filter</label>
+    <input type="text" class="form-control mb-2 mr-sm-2" @bind="nameFilter" placeholder="Filter by name"/> 
+    <button type="button" class="btn btn-primary mr-sm-2 mb-2" @onclick="Filter">Filter</button>
+    <button type="button" class="btn btn-danger mr-sm-2 mb-2" @onclick="Clear">Clear</button>
+</div>
+
 <Pagination TotalPagesQuantity="totalPageQuantity" CurrentPage="currentPage" Radius="2" SelectedPage="SelectedPage" ></Pagination>
 <GenericList Elements="people">
     <NullTemplate>
         <img src="https://media.giphy.com/media/LjbuvHXvzorjG/giphy.gif"/>
     </NullTemplate>
-    @*<WithIndividualElementsTemplate Context="person">
-        <div class="card">
-            <div class="card-body">
-                @person.Name
-            </div>
-        </div>
-    </WithIndividualElementsTemplate>*@
     <WithElementsTemplate>
         <table class="table">
             <thead>
@@ -62,6 +62,7 @@
     List<Person> people { get; set;  }
     private int totalPageQuantity;
     private int currentPage = 1 ;
+    private string nameFilter = string.Empty;
 
 
 
@@ -76,11 +77,23 @@
         await LoadPeople(page);
     }
 
+    private async Task Filter()
+    {
+        currentPage = 1;
+        await LoadPeople();
+    }
+
+    private async Task Clear()
+    {
+        nameFilter = string.Empty;
+        currentPage = 1;
+        await LoadPeople();
+    }
 
     async Task LoadPeople(int page = 1, int quantityPerPage = 10 )
     {
         //await Task.Delay(4000);
-        var httpResponse = await http.GetAsync($"api/people?page={page}&quantityPerPage={quantityPerPage}");
+        var httpResponse = await http.GetAsync($"api/people?page={page}&quantityPerPage={quantityPerPage}&name={nameFilter}");
         if (httpResponse.IsSuccessStatusCode)
         {
             totalPageQuantity = int.Parse(httpResponse.Headers.GetValues("pagesQuantity").FirstOrDefault());
